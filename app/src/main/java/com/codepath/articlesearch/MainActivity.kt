@@ -27,6 +27,7 @@ private const val ARTICLE_SEARCH_URL =
 class MainActivity : AppCompatActivity() {
     private lateinit var articlesRecyclerView: RecyclerView
     private lateinit var binding: ActivityMainBinding
+    private val articles = mutableListOf<Article>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +37,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(view)
 
         articlesRecyclerView = findViewById(R.id.articles)
-        // TODO: Set up ArticleAdapter with articles
+        val articleAdapter = ArticleAdapter(this, articles)
+        articlesRecyclerView.adapter = articleAdapter
 
         articlesRecyclerView.layoutManager = LinearLayoutManager(this).also {
             val dividerItemDecoration = DividerItemDecoration(this, it.orientation)
@@ -59,9 +61,27 @@ class MainActivity : AppCompatActivity() {
                 try {
                     // TODO: Create the parsedJSON
 
-                    // TODO: Do something with the returned json (contains article information)
+                    val parsedJson = createJson().decodeFromString(
+                        SearchNewsResponse.serializer(),
+                        json.jsonObject.toString()
+                    )
 
                     // TODO: Save the articles and reload the screen
+                    // since the response object was the second outermost layer, we need to dig into
+                    // our model using dot notation to get the articles:
+                    //The response will have an array of docs, which will be our list of articles.
+                    //Going through the docs array, we'll take each article and add it to our articles mutable list.
+                    parsedJson.response?.docs?.let { list ->
+                        articles.addAll(list)
+                    }
+
+                    // Save the articles
+                    parsedJson.response?.docs?.let { list ->
+                        articles.addAll(list)
+
+                        // Reload the screen
+                        articleAdapter.notifyDataSetChanged()
+                    }
 
                 } catch (e: JSONException) {
                     Log.e(TAG, "Exception: $e")
